@@ -4,3 +4,8 @@
     overflow-y: hidden;
     scrollbar-width: none;
 }
+
+.scrollable{
+   overflow-x: hidden;
+   overflow-y: auto;
+}
