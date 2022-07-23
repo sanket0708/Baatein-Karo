@@ -16,12 +16,17 @@ import ProfileModal from "./miscellaneous/ProfileModal";
 import UpdateGroupChatModal from "./miscellaneous/UpdateGroupChatModal";
 import ScrollableChat from "./ScrollableChat";
 import "./styles.css";
+import io from "socket.io-client";
+
+const ENDPOINT = "http://localhost:5000";
+var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState();
   const { user, selectedChat, setSelectedChat } = ChatState();
+  const [socketConnected, setSocketConnected] = useState(false);
   const toast = useToast();
 
   const fetchMessages = async () => {
@@ -43,6 +48,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       console.log(messages);
       setMessages(data);
       setLoading(false);
+      socket.emit("join chat", selectedChat._id);
     } catch (error) {
       toast({
         title: "Error Occured!",
@@ -55,9 +61,31 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
+  console.log(messages);
+
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    socket.on("connection", () => setSocketConnected(true));
+  }, []);
+
   useEffect(() => {
     fetchMessages();
+    selectedChatCompare = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    socket.on("message recieved", (newMessageRecieved) => {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageRecieved.chat._id
+      ) {
+        //give notification
+      } else {
+        setMessages([...messages, newMessageRecieved]);
+      }
+    });
+  });
 
   const sendMessage = async (event) => {
     if (event.key === "Enter" && newMessage) {
@@ -82,6 +110,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
         console.log(data);
 
+        socket.emit("new message", data);
         setMessages([...messages, data]);
       } catch (error) {
         toast({
@@ -156,10 +185,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               />
             ) : (
               <div className="messages">
-
-              <ScrollableChat messages = {messages}/>
-
-
+                <ScrollableChat messages={messages} />
               </div>
             )}
 

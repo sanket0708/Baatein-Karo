@@ -6,6 +6,7 @@
 }
 
 .scrollable{
-   overflow-x: hidden;
+   overflow-x: none;
    overflow-y: auto;
+   
 }
